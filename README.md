@@ -128,22 +128,20 @@ NERSC defines `$SCRATCH` / `$PSCRATCH` automatically for each user.
 
 ## 3. Clone the GitHub repository
 
-Replace the URL below with this repository's GitHub URL:
 
 ```bash
-git clone <REPOSITORY_URL>
-```
+git clone https://github.com/joserico00/Intro-to-HPC-Bootcamp-Teaching-Students-to-Leverage-LLMs-for-Regulatory-Genomics-on-HPC.git
 
 For example:
 
 ```bash
-git clone https://github.com/<USERNAME>/<REPOSITORY>.git
+git clone https://github.com/joserico00/Intro-to-HPC-Bootcamp-Teaching-Students-to-Leverage-LLMs-for-Regulatory-Genomics-on-HPC.git
 ```
 
 Then enter the repository:
 
 ```bash
-cd <REPOSITORY>
+cd Intro-to-HPC-Bootcamp-Teaching-Students-to-Leverage-LLMs-for-Regulatory-Genomics-on-HPC
 ```
 
 Optional check:
