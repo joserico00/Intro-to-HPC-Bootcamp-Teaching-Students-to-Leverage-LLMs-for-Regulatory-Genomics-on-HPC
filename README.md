@@ -59,17 +59,7 @@ Run the notebooks in this order:
 | **Notebook 3A — Maximum DNABERT Fine-Tuning** | How can we use HPC resources to fully fine-tune DNABERT? | Use BF16, Slurm, DDP, multiple GPUs, larger batches, full useful-parameter fine-tuning, and GPU-throughput measurements. |
 | **Notebook 3B — Custom Transformer Across All Tokenizers** | How do the tokenizers compare when we scale the custom Transformer? | Train the larger custom Transformer with every tokenizer using multi-GPU DDP and compare scientific and computational results. |
 
-Current student-facing filenames are:
 
-```text
-Notebook0_Preparing_Dataset_StudentReadable.ipynb
-Notebook1_Dataset_DNABERT_StudentReadable.ipynb
-Notebook2_Tokenizers_Transformer_StudentReadable.ipynb
-Notebook3A_Maximum_DNABERT_StudentReadable_Bootcamp.ipynb
-Notebook3B_Custom_Transformer_All_Tokenizers_StudentReadable.ipynb
-```
-
----
 
 # Designed for NERSC Perlmutter
 
