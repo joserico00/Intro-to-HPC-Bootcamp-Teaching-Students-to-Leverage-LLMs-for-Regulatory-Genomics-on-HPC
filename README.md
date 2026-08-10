@@ -122,10 +122,6 @@ NERSC defines `$SCRATCH` / `$PSCRATCH` automatically for each user.
 ```bash
 git clone https://github.com/joserico00/Intro-to-HPC-Bootcamp-Teaching-Students-to-Leverage-LLMs-for-Regulatory-Genomics-on-HPC.git
 
-For example:
-
-```bash
-git clone https://github.com/joserico00/Intro-to-HPC-Bootcamp-Teaching-Students-to-Leverage-LLMs-for-Regulatory-Genomics-on-HPC.git
 ```
 
 Then enter the repository:
