@@ -1,945 +1,233 @@
-# Intro to HPC Bootcamp: Teaching Students to Leverage LLMs for Regulatory Genomics on HPC
+# Intro to HPC Bootcamp: Genome Language Models for Regulatory Genomics
 
-A hands-on educational project for introducing students to **genome language models (gLMs)**, DNA tokenization, Transformer models, DNABERT fine-tuning, and multi-GPU training on **NERSC Perlmutter**.
+This hands-on bootcamp introduces genome language models, DNA tokenization, PyTorch, and GPU computing on **NERSC Perlmutter** through one biological question:
 
-The project uses a binary regulatory-genomics task:
+> Can a model distinguish a CTCF-binding DNA sequence from background DNA?
 
-> **Given a DNA sequence, can a model distinguish a CTCF-binding region from background DNA?**
+The latest student pathway is intentionally split into two simplified groups. Each group starts with a beginner notebook, scales the same model family on HPC, and finishes by testing the trained model on CTCF data from a different human cell type.
 
-Students progress from exploring biological sequence data, to fine-tuning a pretrained DNA language model, to building a Transformer from scratch, and finally to scaling both approaches with GPUs and Slurm.
+## Simplified bootcamp structure
 
----
+```mermaid
+flowchart LR
+    D["Prepared K562 CTCF dataset"]
 
-## Project Goals
+    D --> A1["Group A<br/>Notebook 1<br/>DNABERT beginner"]
+    A1 --> A3["Notebook 3A<br/>DNABERT on HPC"]
+    A3 --> A4["Notebook 4A<br/>External inference"]
 
-By the end of the bootcamp, students should be able to:
+    D --> B2["Group B<br/>Notebook 2<br/>Custom Transformer beginner"]
+    B2 --> B3["Notebook 3B<br/>Custom Transformer on HPC<br/>student tokenizer choice"]
+    B3 --> B4["Notebook 4B<br/>External inference"]
 
-- work with DNA sequences as machine-learning data;
-- explain the biological motivation for predicting CTCF binding;
-- explore genomic data with Python and `pandas`;
-- compare different DNA tokenization strategies;
-- explain the main parts of a Transformer;
-- fine-tune a pretrained DNABERT model;
-- build and train a custom Transformer from scratch;
-- use GPUs on NERSC Perlmutter;
-- understand basic Slurm concepts such as jobs, tasks, GPUs, ranks, and reservations;
-- use PyTorch Distributed Data Parallel (DDP);
-- compare model accuracy, AUROC, AUPRC, training time, GPU memory, and throughput.
-
-The notebooks are intentionally written for students from mixed backgrounds. Some students may know biology but little programming, while others may know computer science but little genomics.
-
----
-
-# Scientific Inspiration
-
-This bootcamp was developed in part from ideas discussed in:
-
-> **Liyuan Shu, Jiao Tang, Xiaoyu Guan, and Daoqiang Zhang.  
-> "A comprehensive survey of genome language models in bioinformatics."  
-> Briefings in Bioinformatics, Volume 27, Issue 1, 2026, bbaf724.**
-
-The review discusses genome language-model architectures, sequence tokenization strategies, pretraining and fine-tuning, evaluation, downstream genomic applications, and the computational demands of genome language models.
-
-- **Article / DOI:** https://doi.org/10.1093/bib/bbaf724
-- **Open-access version (PubMed Central):** https://pmc.ncbi.nlm.nih.gov/articles/PMC12805252/
-
-This repository is an **educational implementation inspired by the concepts in the review**. It is not an official implementation or reproduction of that paper.
-
----
-
-# Notebook Roadmap
-
-Run the notebooks in this order:
-
-| Notebook | Main Question | What Students Do |
-|---|---|---|
-| **Notebook 0 — Preparing the Dataset** | How do we turn genomic coordinates into a machine-learning dataset? | Build positive CTCF examples and background sequences, perform QC, and write `seqs.txt` / `labels.txt`. |
-| **Notebook 1 — Dataset + DNABERT** | Can a pretrained DNA language model learn CTCF binding? | Explore the dataset, learn 6-mer tokenization, inspect DNABERT, fine-tune it, evaluate metrics, and change training parameters. |
-| **Notebook 2 — Tokenizers + Custom Transformer** | How does DNA representation affect a Transformer trained from scratch? | Implement multiple tokenization strategies, build attention and Transformer blocks, train models, and compare tokenizers. |
-| **Notebook 3A — Maximum DNABERT Fine-Tuning** | How can we use HPC resources to fully fine-tune DNABERT? | Use BF16, Slurm, DDP, multiple GPUs, larger batches, full useful-parameter fine-tuning, and GPU-throughput measurements. |
-| **Notebook 3B — Custom Transformer Across All Tokenizers** | How do the tokenizers compare when we scale the custom Transformer? | Train the larger custom Transformer with every tokenizer using multi-GPU DDP and compare scientific and computational results. |
-
-
-
-# Designed for NERSC Perlmutter
-
-The repository is designed primarily for **NERSC Perlmutter**.
-
-NERSC provides JupyterLab on both login and compute nodes. For this bootcamp, a **Shared GPU Node** is convenient for the interactive Notebook 1 and Notebook 2 exercises, while Notebook 3A and Notebook 3B submit their larger GPU jobs through Slurm.
-
-NERSC Jupyter documentation:
-
-- https://docs.nersc.gov/services/jupyter/reference/
-- https://docs.nersc.gov/beginner-guide/
-
-NERSC recommends using Perlmutter Scratch for active, I/O-intensive computational work:
-
-- https://docs.nersc.gov/filesystems/perlmutter-scratch/
-
-> **Important:** Scratch is temporary storage and is subject to purging. Keep important code in GitHub and copy important final results to a persistent filesystem.
-
----
-
-# Quick Start on Perlmutter
-
-## 1. Start Jupyter at NERSC
-
-Go to:
-
-```text
-https://jupyter.nersc.gov
+    E["Astrocyte CTCF<br/>ENCSR000AOO"] --> A4
+    E --> B4
 ```
 
-Sign in with your NERSC account and MFA.
+### Group A — pretrained DNABERT
 
-For the interactive parts of the bootcamp, select a **Shared GPU Node** unless your instructor tells you to use a different configuration.
+1. [`groupA-notebooks/Notebook1_GroupA_DNABERT.ipynb`](groupA-notebooks/Notebook1_GroupA_DNABERT.ipynb) — a beginner-friendly introduction to the K562 dataset, overlapping 6-mer tokenization, local DNABERT, short visible PyTorch, training, and evaluation.
+2. [`groupA-notebooks/Notebook3A_GroupA_DNABERT_HPC.ipynb`](groupA-notebooks/Notebook3A_GroupA_DNABERT_HPC.ipynb) — scale DNABERT fine-tuning with Slurm, GPUs, BF16, and PyTorch Distributed Data Parallel (DDP).
+3. [`groupA-notebooks/Notebook4_External_Inference_ENCSR000AOO_A.ipynb`](groupA-notebooks/Notebook4_External_Inference_ENCSR000AOO_A.ipynb) — load the trained DNABERT checkpoint and evaluate it on external astrocyte CTCF data.
 
-Once JupyterLab opens, use the **Terminal** launcher.
+### Group B — custom Transformer
 
----
+1. [`groupB-notebooks/Notebook2_GroupB_Transformer.ipynb`](groupB-notebooks/Notebook2_GroupB_Transformer.ipynb) — a beginner-friendly introduction to DNA tokenization and a small custom Transformer built in PyTorch.
+2. [`groupB-notebooks/Notebook3B_GroupB_Transformer_HPC.ipynb`](groupB-notebooks/Notebook3B_GroupB_Transformer_HPC.ipynb) — scale the custom Transformer with Slurm and DDP. Students choose the DNA tokenizer they want to investigate.
+3. [`groupB-notebooks/Notebook4_External_Inference_ENCSR000AOO_B.ipynb`](groupB-notebooks/Notebook4_External_Inference_ENCSR000AOO_B.ipynb) — reload the custom model with the **same tokenizer used for training** and evaluate it on external astrocyte CTCF data. The notebook can also select the tokenizer with the best validation AUROC when results from multiple tokenizers are available.
 
-## 2. Move to Perlmutter Scratch
+Both groups answer the same final scientific question: does a model trained on K562 CTCF binding generalize to CTCF binding in primary astrocytes?
 
-In the Jupyter terminal:
+> The root-level notebooks are retained as earlier/full versions. For the latest simplified bootcamp, use the notebooks inside `groupA-notebooks/` and `groupB-notebooks/`.
+
+## Why the beginner notebooks are simpler
+
+The simplified notebooks are designed for students with mixed biology, programming, and HPC experience. They use:
+
+- Mermaid diagrams to show the scientific and computational workflow;
+- short, visible PyTorch sections centered on the learning objective;
+- hidden helper cells for repetitive training, distributed-computing, and bookkeeping machinery;
+- plain-language explanations of each important function and parameter;
+- `pandas` only when a table genuinely makes the data or results easier to understand;
+- evaluation graphs, including training curves and classification metrics;
+- optional visualization playgrounds for students who want to explore further.
+
+Students still run real models and inspect real results, but the first encounter with each idea is kept focused and readable.
+
+## Perlmutter-first quick start
+
+This repository is designed primarily for **NERSC Perlmutter**. Start JupyterLab at [jupyter.nersc.gov](https://jupyter.nersc.gov), sign in with your NERSC account and MFA, and choose a **Shared GPU Node** for the interactive beginner notebooks unless your instructor gives different directions.
+
+Open a JupyterLab terminal and clone the repository into Perlmutter Scratch:
 
 ```bash
 cd $SCRATCH
-```
-
-You can confirm the location with:
-
-```bash
-pwd
-```
-
-NERSC defines `$SCRATCH` / `$PSCRATCH` automatically for each user.
-
----
-
-## 3. Clone the GitHub repository
-
-
-```bash
 git clone https://github.com/joserico00/Intro-to-HPC-Bootcamp-Teaching-Students-to-Leverage-LLMs-for-Regulatory-Genomics-on-HPC.git
-
-```
-
-Then enter the repository:
-
-```bash
 cd Intro-to-HPC-Bootcamp-Teaching-Students-to-Leverage-LLMs-for-Regulatory-Genomics-on-HPC
 ```
 
-Optional check:
+Return to the JupyterLab file browser, open the cloned folder under `$SCRATCH`, and then open only your assigned group folder.
 
-```bash
-ls
-```
+Scratch is intended for active, I/O-intensive work and is subject to purging. Keep important code in GitHub and copy important final results to persistent storage. See the [NERSC Jupyter documentation](https://docs.nersc.gov/services/jupyter/reference/), [beginner guide](https://docs.nersc.gov/beginner-guide/), and [Perlmutter Scratch documentation](https://docs.nersc.gov/filesystems/perlmutter-scratch/).
 
-You should see the bootcamp notebooks.
+## Perlmutter users can skip Notebook 0
 
----
-
-## 4. Open the cloned folder in JupyterLab
-
-Return to the JupyterLab file browser and navigate to the repository you cloned under `$SCRATCH`.
-
-Open the notebooks from that repository directory.
-
-The notebooks use the current working directory as the project directory by default:
-
-```python
-PROJECT_DIR = Path(
-    os.environ.get("DNA_BOOTCAMP_HOME", ".")
-).expanduser().resolve()
-```
-
-Therefore, if you open the notebooks from the cloned repository directory, results and generated scripts will stay with that project.
-
----
-
-# Perlmutter Users: Skip Notebook 0
-
-If you are using the current bootcamp allocation on Perlmutter, **you do not need to run Notebook 0**.
-
-The prepared CTCF/K562 dataset already exists in project storage:
+The prepared K562 CTCF machine-learning dataset already exists at:
 
 ```text
 /global/cfs/cdirs/m4388/projects/project7/ctcf_k562_example
 ```
 
-The directory contains the files used by the later notebooks:
+It contains the sequence and label files used by the group notebooks:
 
 ```text
 seqs.txt
 labels.txt
 ```
 
-Therefore, the normal Perlmutter bootcamp order is:
+Therefore, students using the current `m4388` Perlmutter project can skip `Notebook0PreparingDataset.ipynb`. Notebook 0 remains in the repository to explain how genomic peak coordinates and the hg38/GRCh38 reference genome were converted into fixed-length DNA examples and background controls.
+
+If your NERSC project or allocation differs from `m4388`, update the account and project paths in the notebooks before running them.
+
+## Data provenance
+
+The bootcamp uses two CTCF ChIP-seq datasets from ENCODE. They are from different human cell types but use the same hg38/GRCh38 reference assembly.
+
+| Use | Cell type | ENCODE experiment | Peak file | Role |
+|---|---|---|---|---|
+| Training and internal validation | K562 leukemia cell line | `ENCSR000AKO` | `ENCFF519CXF` | Optimal IDR thresholded CTCF ChIP-seq peaks used to construct positive K562 examples |
+| External inference | Primary human astrocytes | `ENCSR000AOO` | `ENCFF450EVR` | CTCF ChIP-seq peaks used to construct an independent cross-cell-type test set |
+
+### K562 training dataset
+
+The prepared training dataset is not a ready-made machine-learning download. It was constructed from:
 
 ```text
-Notebook 1
-   ↓
-Notebook 2
-   ↓
-Notebook 3A
-   ↓
-Notebook 3B
+ENCODE ENCSR000AKO / ENCFF519CXF CTCF peak coordinates
++ hg38 genomic DNA
++ background hg38 regions without selected CTCF peaks
+→ approximately 200-bp sequences in seqs.txt
++ binary labels in labels.txt
 ```
 
-Notebook 0 is included so students can understand how a genomic dataset can be constructed and so the workflow can be reproduced on another system or with another transcription factor.
+Label `1` represents a CTCF-binding sequence and label `0` represents background DNA.
 
-> **Project/account note:** The current notebooks use NERSC project **`m4388`**. If your allocation or project directory is different, update the paths described in the configuration section below.
-
----
-
-# Dataset
-
-The current task uses:
-
-- **organism:** human;
-- **reference assembly:** hg38 / GRCh38;
-- **cell line:** K562;
-- **target:** CTCF;
-- **positive class (`1`):** CTCF-binding DNA;
-- **background class (`0`):** background DNA;
-- **sequence length:** approximately 200 bp.
-
-The prepared machine-learning dataset is represented by two simple files:
+Notebook 0 currently uses these project files when the dataset needs to be rebuilt:
 
 ```text
-seqs.txt
-labels.txt
+Peaks:     /global/cfs/cdirs/m4388/projects/project7/data/peaks/ENCFF519CXF.bed.gz
+Genome:    /global/cfs/cdirs/m4388/projects/project7/data/genome/hg38.fa.gz
+Blacklist: /global/cfs/cdirs/m4388/projects/project7/data/peaks/ENCFF356LFX.bed.gz
 ```
 
-Each line in `seqs.txt` corresponds to the label on the same line in `labels.txt`.
+### Astrocyte external dataset
 
-Example:
+Notebook 4 uses an external test set derived from ENCODE astrocyte experiment `ENCSR000AOO` and peak file `ENCFF450EVR`. The prepared CSV expected by the current notebooks is:
 
 ```text
-seqs.txt
-ACGTACGT...
-TTGCAACC...
-...
-
-labels.txt
-1
-0
-...
+/global/cfs/cdirs/m4388/projects/project7/test_data/ENCSR000AOO_external_ctcf_test.csv
 ```
 
----
+This dataset is used only for external inference, not for fitting the K562-trained model. Keeping the cell type separate provides a more meaningful test of biological generalization.
 
-# Notebook 0: Rebuilding the Dataset
+## Shared Perlmutter resources
 
-Run Notebook 0 if:
-
-- you are **not** using the prepared Perlmutter dataset;
-- you want to understand how the dataset was generated;
-- you want to use a different transcription factor, cell line, genome assembly, or sequence window.
-
-The current Notebook 0 configuration points to:
-
-```text
-PEAKS_FILE
-/global/cfs/cdirs/m4388/projects/project7/data/peaks/ENCFF519CXF.bed.gz
-
-GENOME_FILE
-/global/cfs/cdirs/m4388/projects/project7/data/genome/hg38.fa.gz
-
-BLACKLIST_FILE
-/global/cfs/cdirs/m4388/projects/project7/data/peaks/ENCFF356LFX.bed.gz
-```
-
-Important variables in Notebook 0 include:
-
-```python
-DATASET_NAME = "ctcf_k562"
-PEAKS_FILE = "..."
-GENOME_FILE = "..."
-BLACKLIST_FILE = "..."
-
-WINDOW_SIZE = 200
-RANDOM_NEG_MULTIPLIER = 1
-SEED = 42
-```
-
-Notebook 0 uses `pybedtools`, so a non-NERSC environment also needs a working **BEDTools** installation in addition to the Python package.
-
----
-
-# Python Environment
-
-The notebooks require a Python environment with packages including:
-
-```text
-numpy
-pandas
-matplotlib
-scikit-learn
-torch
-transformers
-huggingface_hub
-tqdm
-pybedtools        # Notebook 0
-```
-
-Notebook 3A is able to check likely training environments before submitting the Slurm job.
-
-The current Perlmutter project environment includes:
+The current project environment is:
 
 ```text
 /global/cfs/cdirs/m4388/envs/dna-llm/bin/python
 ```
 
-A quick environment check from a terminal is:
+The local DNABERT model used by Group A is:
+
+```text
+/global/cfs/cdirs/m4388/projects/project7/models/DNA_bert_6
+```
+
+The local model path avoids relying on a Hugging Face download from compute nodes. DNABERT represents a DNA sequence as overlapping 6-mers before passing those tokens through the pretrained Transformer.
+
+You can check the shared Python environment from a terminal with:
 
 ```bash
 /global/cfs/cdirs/m4388/envs/dna-llm/bin/python -c \
 "import torch, transformers, sklearn, pandas, numpy; print(torch.__version__)"
 ```
 
-If this succeeds, the main machine-learning dependencies are available.
+The notebooks use packages including `numpy`, `pandas`, `matplotlib`, `scikit-learn`, `torch`, `transformers`, and `tqdm`. Rebuilding the dataset with Notebook 0 also requires `pybedtools` and BEDTools.
 
----
+## From beginner notebook to HPC notebook
 
-# DNABERT Model
+The two tracks intentionally connect introductory model concepts to the way the same work is run on a supercomputer.
 
-The DNABERT notebooks use:
+| Stage | Group A | Group B |
+|---|---|---|
+| Beginner | Fine-tune pretrained DNABERT on a manageable subset; understand 6-mers, tensors, predictions, and evaluation | Build a custom Transformer; understand how DNA becomes tokens, embeddings, attention, and predictions |
+| HPC | Scale DNABERT with Slurm, BF16, DDP, larger batches, and GPU measurements | Scale the custom Transformer with Slurm, BF16, DDP, and the student's chosen tokenizer |
+| External test | Apply the saved DNABERT model to astrocyte CTCF | Apply the saved custom Transformer and its matching tokenizer to astrocyte CTCF |
 
-```text
-zhihan1996/DNA_bert_6
-```
+The HPC notebooks generate the training scripts and Slurm submission files needed for Perlmutter. Important concepts include project accounts, QOS/reservations, GPU counts, ranks, world size, throughput, memory use, and distributed training. Bootcamp reservation names and dates are event-specific and should be verified by the instructor before the session.
 
-The model expects DNA represented as overlapping **6-mers**.
+For ordinary small tests outside a reservation, review the notebook configuration and use the Perlmutter `shared` QOS with an allowed small GPU request. See [Running jobs on Perlmutter](https://docs.nersc.gov/systems/perlmutter/running-jobs/) and the [NERSC queue policy](https://docs.nersc.gov/jobs/policy/) for current rules.
 
-For a 200-bp sequence:
+## Group B tokenizer choice
 
-```text
-200 bases
-   ↓
-195 overlapping 6-mers
-   ↓
-special tokens
-   ↓
-DNABERT
-```
+Group B students can investigate one of the supported DNA representations in Notebook 3B:
 
-Notebook 1 introduces this workflow.
-
-Notebook 3A later performs a larger full-fine-tuning run.
-
----
-
-# Tokenization Methods
-
-Notebook 2 and Notebook 3B examine five representations:
-
-| Tokenizer | Basic Idea |
+| Tokenizer | Basic idea |
 |---|---|
-| `single_nucleotide` | Each A, C, G, or T is one token. |
-| `one_hot` | Each nucleotide is represented as a four-value vector. |
-| `overlap_6mer` | Sliding 6-base windows overlap by five bases. |
-| `nonoverlap_6mer` | DNA is divided into separate 6-base chunks. |
-| `bpe` | Byte Pair Encoding learns frequently occurring sequence chunks from the training data. |
+| Single nucleotide | Each A, C, G, or T is one token |
+| One-hot | Each nucleotide is represented by a four-value vector |
+| Overlapping 6-mer | A sliding six-base window moves one base at a time |
+| Non-overlapping 6-mer | DNA is divided into separate six-base chunks |
+| BPE | Byte Pair Encoding learns common sequence chunks from the training data |
 
-Notebook 3B trains the larger custom Transformer once for **each tokenizer**.
+Notebook 4 reconstructs the same representation used during training. This is essential: changing tokenization at inference time would change the model inputs and invalidate the comparison.
 
----
+## Evaluation and reproducibility
 
-# Running Notebook 1
+Students examine biological prediction metrics such as accuracy, precision, recall, specificity, F1, AUROC, and AUPRC. The HPC notebooks also record computational measurements such as elapsed time, examples per second, trainable parameters, GPU count, and peak GPU memory.
 
-Notebook 1 performs the first major model-training exercise.
-
-Main workflow:
-
-```text
-load DNA
-↓
-inspect and clean data
-↓
-convert DNA to overlapping 6-mers
-↓
-load pretrained DNABERT
-↓
-fine-tune
-↓
-calculate metrics
-↓
-graph results
-↓
-change one parameter
-↓
-compare runs
-```
-
-If running on Perlmutter, confirm:
-
-```python
-DATA_DIR = "/global/cfs/cdirs/m4388/projects/project7/ctcf_k562_example"
-```
-
-and verify that the notebook reports a CUDA device.
-
-Example:
-
-```text
-Device : cuda
-GPU    : NVIDIA A100...
-```
-
----
-
-# Running Notebook 2
-
-Notebook 2 constructs the custom Transformer rather than relying on DNABERT.
-
-Students implement or inspect:
-
-```text
-tokenization
-embeddings
-self-attention
-multi-head attention
-feed-forward network
-residual connections
-layer normalization
-Transformer blocks
-classification
-```
-
-For the cleanest comparison, the same cleaned dataset and train/validation split are used across representations.
-
----
-
-# Running Notebook 3A
-
-Notebook 3A is the HPC/full-fine-tuning DNABERT notebook.
-
-It introduces:
-
-- Slurm;
-- NERSC GPU allocations;
-- PyTorch Distributed Data Parallel;
-- ranks and world size;
-- BF16 automatic mixed precision;
-- multi-GPU training;
-- larger local/global batches;
-- examples per second;
-- peak GPU memory;
-- full useful-parameter fine-tuning.
-
-## Important variables
-
-Near the beginning of Notebook 3A:
-
-```python
-NERSC_ACCOUNT = "m4388"
-
-RUN_MODE = "bootcamp"
-BOOTCAMP_DAY = 1
-
-GPU_COUNT = 4
-LOCAL_BATCH_SIZE = 32
-```
-
-### During the bootcamp
-
-Use:
-
-```python
-RUN_MODE = "bootcamp"
-```
-
-and select the correct:
-
-```python
-BOOTCAMP_DAY
-```
-
-The notebook contains a `BOOTCAMP_RESERVATIONS` dictionary.
-
-**Reservation names and times are bootcamp-specific.** Verify them before the event and update them if the NERSC reservation changes.
-
-### Outside bootcamp hours
-
-For ordinary small tests on Perlmutter:
-
-```python
-RUN_MODE = "shared"
-GPU_COUNT = 1
-```
-
-or:
-
-```python
-RUN_MODE = "shared"
-GPU_COUNT = 2
-```
-
-Current NERSC policy allows GPU jobs in the `shared` QOS to request 1 or 2 GPUs.
-
-See:
-
-https://docs.nersc.gov/systems/perlmutter/running-jobs/
-
----
-
-# Running Notebook 3B
-
-Notebook 3B uses the custom Transformer from Notebook 2 at a larger scale.
-
-The default model configuration is intentionally larger than the introductory Notebook 2 model:
-
-```python
-MODEL_CONFIG = {
-    "n_embd": 256,
-    "n_head": 8,
-    "n_layer": 8,
-    "dropout": 0.10,
-    "epochs": 10,
-    "local_batch_size": 32,
-    "learning_rate": 3e-4,
-    "weight_decay": 0.01,
-    "warmup_ratio": 0.10,
-    "precision": "bf16",
-    "bpe_merges": 80,
-    "seed": 42,
-}
-```
-
-It trains the model with:
-
-```text
-single nucleotide
-one-hot
-overlapping 6-mer
-non-overlapping 6-mer
-BPE
-```
-
-and saves a combined comparison.
-
-For the final DNABERT-vs-custom-model comparison, run **Notebook 3A before Notebook 3B**.
-
----
-
-# Slurm and GPU Configuration on Perlmutter
-
-Notebook 3A and Notebook 3B generate Slurm scripts automatically.
-
-Important NERSC concepts include:
-
-```text
--A / --account        project allocation
--C gpu                request GPU nodes
--q                    QOS / queue
--N                    number of nodes
---gpus-per-node       GPUs requested on each node
---ntasks-per-node     DDP processes on each node
---gpu-bind            task/GPU visibility
-```
-
-The notebooks map Slurm tasks to PyTorch DDP processes:
-
-```text
-SLURM_PROCID  → RANK
-SLURM_LOCALID → LOCAL_RANK
-SLURM_NTASKS  → WORLD_SIZE
-```
-
-NERSC Perlmutter job documentation:
-
-https://docs.nersc.gov/systems/perlmutter/running-jobs/
-
----
-
-# If You Are NOT Running on Perlmutter
-
-Notebook 0, Notebook 1, and Notebook 2 can be adapted to another Linux workstation, HPC system, or compatible GPU environment.
-
-Notebook 3A and Notebook 3B are more tightly coupled to **NERSC + Slurm + NVIDIA GPUs** and require additional changes on another system.
-
-## Variables and paths to review
-
-### All notebooks
-
-The notebooks support:
-
-```text
-DNA_BOOTCAMP_HOME
-```
-
-to choose the project/output directory.
-
-If it is not set, the notebooks use the directory from which they are opened.
-
----
-
-### Notebook 0
-
-Change:
-
-```python
-PEAKS_FILE
-GENOME_FILE
-BLACKLIST_FILE
-DATASET_NAME
-```
-
-You may also change:
-
-```python
-WINDOW_SIZE
-RANDOM_NEG_MULTIPLIER
-SEED
-```
-
----
-
-### Notebook 1
-
-Change:
-
-```python
-DATA_DIR
-```
-
-to the directory containing:
-
-```text
-seqs.txt
-labels.txt
-```
-
-The notebook automatically uses CUDA if `torch.cuda.is_available()` is true.
-
----
-
-### Notebook 2
-
-Change:
-
-```python
-DATA_DIR
-```
-
-to your dataset directory.
-
-The custom Transformer also automatically chooses CUDA when available.
-
----
-
-### Notebook 3A
-
-Review or replace:
-
-```python
-DATA_DIR
-NERSC_ACCOUNT
-RUN_MODE
-BOOTCAMP_DAY
-BOOTCAMP_RESERVATIONS
-GPU_COUNT
-LOCAL_BATCH_SIZE
-PYTHON_CANDIDATES
-```
-
-The current shared environment path:
-
-```text
-/global/cfs/cdirs/m4388/envs/dna-llm/bin/python
-```
-
-is Perlmutter-specific.
-
-If you are on another Slurm cluster, you must also review the generated `#SBATCH` options.
-
-If you are not using Slurm, the launcher section will need to be replaced with the job-launch mechanism used by your system.
-
----
-
-### Notebook 3B
-
-Review or replace:
-
-```python
-DATA_DIR
-NERSC_ACCOUNT
-RUN_MODE
-BOOTCAMP_DAY
-BOOTCAMP_RESERVATIONS
-GPU_COUNT
-LOCAL_BATCH_SIZE
-NOTEBOOK_PYTHON
-```
-
-Also review the generated Slurm options and DDP launch command for your HPC environment.
-
----
-
-# Recommended Directory Layout
-
-After running the notebooks, the repository may look similar to:
-
-```text
-project/
-│
-├── Notebook0_Preparing_Dataset_StudentReadable.ipynb
-├── Notebook1_Dataset_DNABERT_StudentReadable.ipynb
-├── Notebook2_Tokenizers_Transformer_StudentReadable.ipynb
-├── Notebook3A_Maximum_DNABERT_StudentReadable_Bootcamp.ipynb
-├── Notebook3B_Custom_Transformer_All_Tokenizers_StudentReadable.ipynb
-│
-├── notebook1_results/
-├── notebook2_results/
-├── notebook3a_results/
-├── notebook3a_scripts/
-├── notebook3b_results/
-└── notebook3b_scripts/
-```
-
-The generated result directories may contain:
-
-```text
-*_history.csv
-*_predictions.csv
-*_summary.json
-*_parameters.csv
-*_parameter_groups.csv
-*_checkpoint.pt
-Slurm output logs
-```
-
----
-
-# Metrics Used
-
-Students encounter several model-evaluation metrics:
-
-- **Accuracy** — fraction of predictions that are correct.
-- **Precision** — among predicted binding sequences, how many are truly binding?
-- **Recall / Sensitivity** — among real binding sequences, how many did the model find?
-- **Specificity** — among background sequences, how many did the model correctly reject?
-- **F1 score** — balance between precision and recall.
-- **AUROC** — how well the model ranks positive examples above negative examples across thresholds.
-- **AUPRC** — precision-recall performance across thresholds.
-
-Computational measurements include:
-
-- training time;
-- time per epoch;
-- examples per second;
-- number of trainable parameters;
-- GPU count;
-- peak GPU memory;
-- parallel speedup and efficiency where applicable.
-
----
-
-# Reproducibility
-
-The notebooks use fixed random seeds where possible:
+The notebooks use a fixed seed where possible:
 
 ```python
 SEED = 42
 ```
 
-For controlled comparisons, students should generally:
+For controlled comparisons, keep the cleaned dataset, train/validation split, and seed fixed, and change one major variable at a time. Distributed GPU training can still contain nondeterministic operations, so the same seed does not guarantee bit-for-bit identical results.
 
-1. use the same cleaned dataset;
-2. keep the train/validation split fixed;
-3. keep the seed fixed;
-4. change **one major variable at a time**;
-5. record the configuration with the result.
+## Running somewhere other than Perlmutter
 
-GPU/distributed training can still contain sources of nondeterminism, so identical seeds do not guarantee bit-for-bit identical results.
+The beginner notebooks can be adapted to another Linux workstation or compatible GPU environment by changing the data, model, environment, and output paths. Notebook 3A and Notebook 3B are specifically designed around NERSC, Slurm, and NVIDIA GPUs; another HPC system will require changes to the generated scheduler options and launch commands.
 
----
+Review at least these settings when adapting the material:
 
-# Common Problems
+- dataset and external-test paths;
+- local DNABERT path;
+- Python environment;
+- NERSC/Slurm account, QOS, reservation, and GPU count;
+- project and results directories.
 
-## `FileNotFoundError` for `seqs.txt` or `labels.txt`
+## Scientific inspiration and attribution
 
-Check:
+This bootcamp was developed in part from ideas discussed in:
 
-```python
-DATA_DIR
-```
+> Liyuan Shu, Jiao Tang, Xiaoyu Guan, and Daoqiang Zhang. **“A comprehensive survey of genome language models in bioinformatics.”** *Briefings in Bioinformatics*, Volume 27, Issue 1, 2026, bbaf724.
 
-On the current Perlmutter project it should point to:
+- [Article and DOI](https://doi.org/10.1093/bib/bbaf724)
+- [Open-access article at PubMed Central](https://pmc.ncbi.nlm.nih.gov/articles/PMC12805252/)
 
-```text
-/global/cfs/cdirs/m4388/projects/project7/ctcf_k562_example
-```
+The review covers genome-language-model architectures, tokenization, pretraining and fine-tuning, evaluation, downstream genomic applications, and computational requirements. This repository is an educational implementation inspired by those concepts; it is not an official implementation or reproduction of the paper.
 
----
-
-## `ModuleNotFoundError: No module named 'torch'`
-
-The batch job is using the wrong Python environment.
-
-On the current Perlmutter project, check:
+## Before the bootcamp
 
 ```text
-/global/cfs/cdirs/m4388/envs/dna-llm/bin/python
-```
-
-Notebook 3A includes a Python-environment preflight before submitting the training job.
-
----
-
-## Slurm rejects the GPU request
-
-Check:
-
-```python
-NERSC_ACCOUNT
-RUN_MODE
-GPU_COUNT
-BOOTCAMP_DAY
-BOOTCAMP_RESERVATIONS
-```
-
-Also verify that the reservation is currently active if using:
-
-```python
-RUN_MODE = "bootcamp"
-```
-
----
-
-## Running outside the bootcamp reservation
-
-Use:
-
-```python
-RUN_MODE = "shared"
-```
-
-and request only:
-
-```python
-GPU_COUNT = 1
-```
-
-or:
-
-```python
-GPU_COUNT = 2
-```
-
-for small Perlmutter tests.
-
----
-
-## Hugging Face model download problems
-
-DNABERT is loaded from Hugging Face when it is not already cached.
-
-Check that the compute environment can access the model or that it has already been cached.
-
-The model identifier used here is:
-
-```text
-zhihan1996/DNA_bert_6
-```
-
----
-
-# Suggested Bootcamp Progression
-
-A possible teaching sequence is:
-
-```text
-Biology + Python
-      ↓
-Explore CTCF dataset
-      ↓
-DNABERT tokenization
-      ↓
-Fine-tune pretrained DNABERT
-      ↓
-Build self-attention
-      ↓
-Build custom Transformer
-      ↓
-Compare DNA tokenization strategies
-      ↓
-Learn Slurm + DDP
-      ↓
-Scale full DNABERT fine-tuning
-      ↓
-Scale custom Transformer across tokenizers
-      ↓
-Compare biological performance and compute cost
-```
-
-The emphasis is not only on obtaining the highest score.
-
-Students should be able to explain:
-
-> **What representation did we use? What model did we train? What computational resources did we use? What did the result tell us biologically and computationally?**
-
----
-
-# References
-
-## Genome language models
-
-Shu L, Tang J, Guan X, Zhang D. **A comprehensive survey of genome language models in bioinformatics.** *Briefings in Bioinformatics*. 2026;27(1):bbaf724.
-
-DOI:
-
-https://doi.org/10.1093/bib/bbaf724
-
-Open-access article:
-
-https://pmc.ncbi.nlm.nih.gov/articles/PMC12805252/
-
-## NERSC / Perlmutter
-
-NERSC Jupyter documentation:
-
-https://docs.nersc.gov/services/jupyter/reference/
-
-NERSC beginner guide:
-
-https://docs.nersc.gov/beginner-guide/
-
-Perlmutter Scratch:
-
-https://docs.nersc.gov/filesystems/perlmutter-scratch/
-
-Running GPU jobs on Perlmutter:
-
-https://docs.nersc.gov/systems/perlmutter/running-jobs/
-
-NERSC queue/QOS policy:
-
-https://docs.nersc.gov/jobs/policy/
-
----
-
-# Acknowledgment
-
-This project is designed for educational use on the **NERSC Perlmutter** supercomputer and demonstrates how HPC resources can be incorporated into genome-language-model training workflows.
-
----
-
-## Repository Setup Checklist
-
-Before the bootcamp:
-
-```text
-[ ] GitHub repository is cloned into $SCRATCH
-[ ] Notebooks open from the cloned repository
-[ ] Python environment imports torch and transformers
-[ ] Prepared dataset path is accessible
-[ ] NERSC_ACCOUNT is correct
-[ ] Bootcamp reservation names/dates are current
-[ ] RUN_MODE is set correctly
-[ ] GPU_COUNT is appropriate for the selected QOS/reservation
-[ ] Notebook 1 can see a GPU
-[ ] Notebook 3A/3B Slurm smoke/preflight checks succeed
+[ ] Repository is cloned into $SCRATCH
+[ ] The assigned group folder opens in JupyterLab
+[ ] Shared Python environment imports successfully
+[ ] K562 prepared dataset is accessible
+[ ] External astrocyte test CSV is accessible
+[ ] Local DNABERT model is accessible for Group A
+[ ] NERSC account and bootcamp reservation settings are current
+[ ] Beginner notebook sees a GPU
+[ ] HPC notebook preflight checks succeed
 ```
