@@ -258,3 +258,9 @@ Written by Jose E. Rodriguez Rios ([@joserico00](https://github.com/joserico00))
 [ ] Beginner notebook sees a GPU
 [ ] HPC notebook preflight checks succeed
 ```
+
+## License
+
+The code and written material I created here are MIT licensed — see [LICENSE](LICENSE).
+Material provided by the bootcamp, the datasets it draws on, and anything else authored
+by others remain the property of their authors and are used under their own terms.
