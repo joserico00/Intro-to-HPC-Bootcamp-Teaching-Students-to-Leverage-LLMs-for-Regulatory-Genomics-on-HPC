@@ -1,0 +1,23 @@
+.DS_Store
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Written by the HPC notebooks at run time: training scripts, Slurm files,
+# job logs, checkpoints and metrics. Regenerate them by running the notebooks.
+notebook3a_scripts/
+notebook3b_scripts/
+notebook3a_results/
+notebook3b_results/
+notebook4_results/
+slurm_logs/
+slurm-*.out
+*.pt
+*.pth
+
+# A dataset rebuilt locally by Notebook 0.
+seqs.txt
+labels.txt
+*.bed.gz
+*.fa.gz
+*.fai

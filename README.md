@@ -87,7 +87,30 @@ labels.txt
 
 Therefore, students using the current `m4388` Perlmutter project can skip `Notebook0PreparingDataset.ipynb`. Notebook 0 remains in the repository to explain how genomic peak coordinates and the hg38/GRCh38 reference genome were converted into fixed-length DNA examples and background controls.
 
-If your NERSC project or allocation differs from `m4388`, update the account and project paths in the notebooks before running them.
+If your NERSC project or allocation differs from `m4388`, you do not need to edit the notebooks. Set the environment variables in [Pointing the notebooks somewhere else](#pointing-the-notebooks-somewhere-else) instead.
+
+## Pointing the notebooks somewhere else
+
+Every cluster path and the Slurm account are read from the environment, and each one falls back to the `m4388` value shown above. Students on the bootcamp project can ignore this section entirely.
+
+| Variable | What it points at | Default |
+|---|---|---|
+| `DNA_BOOTCAMP_HOME` | Where the notebooks read and write their own results | the directory Jupyter was started in |
+| `DNA_LLM_DATA` | Prepared K562 dataset (`seqs.txt`, `labels.txt`) | `/global/cfs/cdirs/m4388/projects/project7/ctcf_k562_example` |
+| `DNA_LLM_DNABERT` | Local DNABERT-6 model used by Group A | `/global/cfs/cdirs/m4388/projects/project7/models/DNA_bert_6` |
+| `DNA_LLM_TEST_CSV` | External astrocyte test set used by Notebook 4 | `/global/cfs/cdirs/m4388/projects/project7/test_data/ENCSR000AOO_external_ctcf_test.csv` |
+| `DNA_LLM_PYTHON` | First interpreter the HPC notebooks try for the Slurm jobs | `/global/cfs/cdirs/m4388/envs/dna-llm/bin/python` |
+| `NERSC_ACCOUNT` | Account written into `#SBATCH -A` | `m4388` |
+| `DNA_LLM_PEAKS`, `DNA_LLM_GENOME`, `DNA_LLM_BLACKLIST` | Notebook 0 only: the three ENCODE/hg38 inputs | the paths listed under [K562 training dataset](#k562-training-dataset) |
+| `DNA_LLM_SHARED_DATA` | Notebook 0 only: the shared data tree those three files sit in | `/global/cfs/cdirs/m4388/projects/project7/data` |
+| `DNA_LLM_BIN` | Notebook 0 only: directory holding the BEDTools binaries | `/global/cfs/cdirs/m4388/envs/dna-llm/bin` |
+
+Set them in the terminal **before** starting JupyterLab, so the kernel and any job you submit from it both inherit them:
+
+```bash
+export NERSC_ACCOUNT=m1234
+export DNA_LLM_DATA=$SCRATCH/ctcf_k562_example
+```
 
 ## Data provenance
 
@@ -153,7 +176,7 @@ You can check the shared Python environment from a terminal with:
 "import torch, transformers, sklearn, pandas, numpy; print(torch.__version__)"
 ```
 
-The notebooks use packages including `numpy`, `pandas`, `matplotlib`, `scikit-learn`, `torch`, `transformers`, and `tqdm`. Rebuilding the dataset with Notebook 0 also requires `pybedtools` and BEDTools.
+The notebooks use packages including `numpy`, `pandas`, `matplotlib`, `scikit-learn`, `torch`, `transformers`, and `tqdm`. Rebuilding the dataset with Notebook 0 also requires `pybedtools` and BEDTools. The shared environment already has all of them; [`requirements.txt`](requirements.txt) lists them for anyone installing elsewhere.
 
 ## From beginner notebook to HPC notebook
 
@@ -197,15 +220,15 @@ For controlled comparisons, keep the cleaned dataset, train/validation split, an
 
 ## Running somewhere other than Perlmutter
 
-The beginner notebooks can be adapted to another Linux workstation or compatible GPU environment by changing the data, model, environment, and output paths. Notebook 3A and Notebook 3B are specifically designed around NERSC, Slurm, and NVIDIA GPUs; another HPC system will require changes to the generated scheduler options and launch commands.
+The beginner notebooks run on another Linux workstation or compatible GPU environment once the environment variables above point at your own copies of the data and model, and the packages in [`requirements.txt`](requirements.txt) are installed. Notebook 3A and Notebook 3B are specifically designed around NERSC, Slurm, and NVIDIA GPUs; another HPC system will require changes to the generated scheduler options and launch commands.
 
 Review at least these settings when adapting the material:
 
-- dataset and external-test paths;
-- local DNABERT path;
-- Python environment;
-- NERSC/Slurm account, QOS, reservation, and GPU count;
-- project and results directories.
+- dataset and external-test paths (`DNA_LLM_DATA`, `DNA_LLM_TEST_CSV`);
+- local DNABERT path (`DNA_LLM_DNABERT`);
+- Python environment (`DNA_LLM_PYTHON`);
+- Slurm account (`NERSC_ACCOUNT`), plus the QOS, reservation, and GPU count set in the notebook's *EDIT ME* cell;
+- project and results directories (`DNA_BOOTCAMP_HOME`).
 
 ## Scientific inspiration and attribution
 
@@ -217,6 +240,10 @@ This bootcamp was developed in part from ideas discussed in:
 - [Open-access article at PubMed Central](https://pmc.ncbi.nlm.nih.gov/articles/PMC12805252/)
 
 The review covers genome-language-model architectures, tokenization, pretraining and fine-tuning, evaluation, downstream genomic applications, and computational requirements. This repository is an educational implementation inspired by those concepts; it is not an official implementation or reproduction of the paper.
+
+## Author
+
+Written by Jose E. Rodriguez Rios ([@joserico00](https://github.com/joserico00)) as bootcamp teaching material. The ENCODE datasets and the DNABERT model are the work of their original authors, cited above.
 
 ## Before the bootcamp
 

@@ -1,0 +1,21 @@
+# Packages the notebooks import. On Perlmutter the shared project environment
+# already provides all of them, so install this only when you are running the
+# material somewhere else:
+#
+#     pip install -r requirements.txt
+#
+# torch is listed without a version because the right build depends on your
+# CUDA version — see https://pytorch.org/get-started/locally/ first.
+
+torch
+transformers>=4.30
+numpy
+pandas
+scikit-learn
+matplotlib
+tqdm
+
+# Notebook 0 only, for rebuilding the dataset from ENCODE peaks and hg38.
+# pybedtools also needs the BEDTools binaries on your PATH.
+pybedtools
+pyfaidx
